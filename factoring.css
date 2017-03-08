@@ -99,6 +99,10 @@ div.node:hover div.smallbtn {
     visibility: visible;
 }
 
+div.node.selected {
+    background: #00f;
+}
+
 div.select {
     background: rgba(0,0,255,0.2);
     position: absolute;

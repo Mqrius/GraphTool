@@ -157,58 +157,97 @@
 
     var sx = Math.round(window.innerWidth/2),
         sy = Math.round(window.innerHeight/2),
-        updateAll = makeEvent();
+        updateAll = makeEvent(),
+        nodes = makeSet(),
+        edges = makeSet(),
+        selectedNodes = makeSet();
 
-    function createLine(obj1, obj2) {
-        var line = element("div");
-        document.body.appendChild(line);
-        line.style.zIndex = -1000;
-        line.style.height = "4px";
-        line.style.position = "absolute";
-        line.style.background = "#888";
-        function drawline(ax, ay, bx, by) {
+    function collision(ax1, ax2, ay1, ay2, bx1, bx2, by1, by2) {
+        [ax1, ax2] = (ax1 > ax2) ? [ax2, ax1] : [ax1, ax2];
+        [ay1, ay2] = (ay1 > ay2) ? [ay2, ay1] : [ay1, ay2];
+        [bx1, bx2] = (bx1 > bx2) ? [bx2, bx1] : [bx1, bx2];
+        [by1, by2] = (by1 > by2) ? [by2, by1] : [by1, by2];
+        return (
+                   ((bx1 > ax1 && bx1 < ax2) || (bx2 > ax1 && bx2 < ax2))
+                && ((by1 > ay1 && by1 < ay2) || (by2 > ay1 && by2 < ay2))
+               );
+    }
+        
+    function createEdge(obj1, obj2) {
+        var edge = element("div");
+        document.body.appendChild(edge);
+        edge.style.zIndex = -1000;
+        edge.style.height = "4px";
+        edge.style.position = "absolute";
+        edge.style.background = "#888";
+        function drawedge(ax, ay, bx, by) {
             var angle = -Math.atan2(ay-by, bx-ax) * 180 / Math.PI;
             var length = Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by));
-            line.style.width = length + "px";
-            line.style.left = (sx + ax) + "px";
-            line.style.top = (sy + ay) + "px";
-            line.style.transform = "rotate(" + angle + "deg)";
-            line.style.transformOrigin = "0% 0%";
+            edge.style.width = length + "px";
+            edge.style.left = (sx + ax) + "px";
+            edge.style.top = (sy + ay) - 2 + "px";
+            edge.style.transform = "rotate(" + angle + "deg)";
+            edge.style.transformOrigin = "0px 2px";
         }
-        line.upd = function () {
-            drawline(
+        edge.upd = function () {
+            drawedge(
                 obj1.getx(),
                 obj1.gety(),
                 obj2.getx(),
                 obj2.gety()
             );
         }
-        updateAll.add(line.upd);
-        return line;
+        var handle = {
+            getel : function () {
+                return edge;
+            }
+        };
+        updateAll.add(edge.upd);
+        edges.add(handle);
+        return edge;
     }
 
     function createNode(x, y, block_style) {
-        var d = element("div");
-        document.body.appendChild(d);
-        d.className = "node";
+        var node = element("div");
+        document.body.appendChild(node);
+        node.className = "node";
         if (block_style) {
-            d.className += " " + block_style;
+            node.className += " " + block_style;
         }
-        var connectedLines = makeSet();
+        var connectedEdges = makeSet();
+        var selected = false;
 
-        var handle = {
+        var handle;
+        handle = {
             getx : function () {
-                return x + Math.round(d.offsetWidth / 2);
+                return x + Math.round(node.offsetWidth / 2);
             },
             gety : function () {
-                return y + Math.round(d.offsetHeight / 2);;
+                return y + Math.round(node.offsetHeight / 2);;
             },
-            addline : function (l) {
-                connectedLines.add(l);
+            getselected : function () {
+                return selected;
+            },
+            setselected : function (b) {
+                if (b && !selected) {
+                    node.classList.add("selected");
+                    selectedNodes.add(handle);
+                }
+                if (!b && selected) {
+                    node.classList.remove("selected");
+                    selectedNodes.remove(handle);
+                }
+                selected = b;
+            },
+            getel : function () {
+                return node;
+            },
+            addedge : function (l) {
+                connectedEdges.add(l);
             }
         };
-        function updLines() {
-            connectedLines.forEach(function (l) {
+        function updEdges() {
+            connectedEdges.forEach(function (l) {
                 l.upd();
             });
         }
@@ -219,71 +258,84 @@
             btn.className = "smallbtn " + style;
             btn.onclick = function () {
                 var nn = createNode(
-                    x + Math.round((d.offsetWidth - 78) / 2),
-                    y + dy + ((dy > 0) ? d.offsetHeight - 65 : 0),
+                    x + Math.round((node.offsetWidth - 78) / 2),
+                    y + dy + ((dy > 0) ? node.offsetHeight - 64 : 0),
                     style);
-                var nl = createLine(nn, handle);
-                nn.addline(nl);
-                handle.addline(nl);
+                var nl = createEdge(nn, handle);
+                nn.addedge(nl);
+                handle.addedge(nl);
                 nl.upd();
             };
-            d.appendChild(btn);
+            node.appendChild(btn);
         }
         function addtext() {
             var t = element("div");
             t.className = "edittext";
             t.contentEditable = true;
-            t.addEventListener('input', updLines, false);
-            d.appendChild(t);
+            t.addEventListener('input', updEdges, false);
+            node.appendChild(t);
         }
 
         addbtn(-150);
-        d.lastChild.style.top = "-40px";
+        node.lastChild.style.top = "-40px";
         addtext();
         addbtn(150);
-        d.lastChild.style.bottom = "-40px";
+        node.lastChild.style.bottom = "-40px";
 
-        var drag = makeDraggable(d);
+        var drag = makeDraggable(node);
         function upd() {
-            d.style.left = (sx + x) + "px";
-            d.style.top = (sy + y) + "px";
+            node.style.left = (sx + x) + "px";
+            node.style.top = (sy + y) + "px";
         }
         drag.onmove.add(function (e) {
             x += e.dx;
             y += e.dy;
             upd();
-            updLines();
+            updEdges();
         });
         upd();
         updateAll.add(upd);
+        nodes.add(handle);
         return handle;
     }
     
-    function makeSelect() {
-        var s = element("div");
-        s.className = "select";
+    function createSelect() {
+        var select = element("div");
+        select.className = "select";
         var x1, y1, x2, y2;
         function upd() {
-            s.style.left   = Math.min(x1,x2) + "px";
-            s.style.top    = Math.min(y1,y2) + "px";
-            s.style.width  = Math.abs(x2-x1) + "px";
-            s.style.height = Math.abs(y2-y1) + "px";
+            select.style.left   = sx + Math.min(x1,x2) + "px";
+            select.style.top    = sy + Math.min(y1,y2) + "px";
+            select.style.width  =      Math.abs(x2-x1) + "px";
+            select.style.height =      Math.abs(y2-y1) + "px";
         }
         function start(e) {
-            x1 = e.x;
-            y1 = e.y;
-            x2 = e.x;
-            y2 = e.y;
-            document.body.appendChild(s);
+            x1 = e.x - sx;
+            y1 = e.y - sy;
+            x2 = e.x - sx;
+            y2 = e.y - sy;
+            document.body.appendChild(select);
             upd();
         }
         function move(e) {
-            x2 = e.x;
-            y2 = e.y;
+            x2 += e.dx;
+            y2 += e.dy;
+            nodes.forEach(function (node) {
+                var col = collision(x1, x2, y1, y2, node.getx(), node.getx(), node.gety(), node.gety());
+                node.setselected(col);
+            });
             upd();
         }
         function end(e) {
-            document.body.removeChild(s);
+            document.body.removeChild(select);
+            function unselect(e) {
+                console.log(e);
+                selectedNodes.forEach(function (node) {
+                    node.setselected(false);
+                });
+                document.removeEventListener('mousedown', unselect, false);
+            }
+            document.addEventListener('mousedown', unselect, false);
         }
         return {
             start: start,
@@ -294,10 +346,10 @@
     
     function initBody() {
         var drag = makeDraggable(document.body);
-        var s = makeSelect();
-        drag.onstart.add(s.start);
-        drag.onmove.add(s.move);
-        drag.onend.add(s.end);
+        var select = createSelect();
+        drag.onstart.add(select.start);
+        drag.onmove.add(select.move);
+        drag.onend.add(select.end);
     }
 
     function init() {
