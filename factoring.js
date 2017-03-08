@@ -183,6 +183,7 @@
                 obj2.gety()
             );
         }
+        updateAll.add(line.upd);
         return line;
     }
 
@@ -206,7 +207,11 @@
                 connectedLines.add(l);
             }
         };
-
+        function updLines() {
+            connectedLines.forEach(function (l) {
+                l.upd();
+            });
+        }
         function addbtn(dy) {
             var btn = element("div", "+");
             var style = block_style ? block_style :
@@ -228,6 +233,7 @@
             var t = element("div");
             t.className = "edittext";
             t.contentEditable = true;
+            t.addEventListener('input', updLines, false);
             d.appendChild(t);
         }
 
@@ -241,14 +247,12 @@
         function upd() {
             d.style.left = (sx + x) + "px";
             d.style.top = (sy + y) + "px";
-            connectedLines.forEach(function (l) {
-                l.upd();
-            });
         }
         drag.onmove.add(function (e) {
             x += e.dx;
             y += e.dy;
             upd();
+            updLines();
         });
         upd();
         updateAll.add(upd);
