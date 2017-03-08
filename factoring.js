@@ -258,13 +258,50 @@
         updateAll.add(upd);
         return handle;
     }
+    
+    function makeSelect() {
+        var s = element("div");
+        s.className = "select";
+        var x1, y1, x2, y2;
+        function upd() {
+            s.style.left   = Math.min(x1,x2) + "px";
+            s.style.top    = Math.min(y1,y2) + "px";
+            s.style.width  = Math.abs(x2-x1) + "px";
+            s.style.height = Math.abs(y2-y1) + "px";
+        }
+        function start(e) {
+            x1 = e.x;
+            y1 = e.y;
+            x2 = e.x;
+            y2 = e.y;
+            document.body.appendChild(s);
+            upd();
+        }
+        function move(e) {
+            x2 = e.x;
+            y2 = e.y;
+            upd();
+        }
+        function end(e) {
+            document.body.removeChild(s);
+        }
+        return {
+            start: start,
+            move: move,
+            end: end
+        }
+    }
+    
+    function initBody() {
+        var drag = makeDraggable(document.body);
+        var s = makeSelect();
+        drag.onstart.add(s.start);
+        drag.onmove.add(s.move);
+        drag.onend.add(s.end);
+    }
 
     function init() {
-        makeDraggable(document.body).onmove.add(function (e) {
-            sx += e.dx;
-            sy += e.dy;
-            updateAll.fire();
-        });
+        initBody();
         createNode(-50, -50);
     }
 

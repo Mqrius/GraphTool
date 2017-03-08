@@ -98,3 +98,9 @@ div.node:hover div.smallbtn {
     transition: all 0s;
     visibility: visible;
 }
+
+div.select {
+    background: rgba(0,0,255,0.2);
+    position: absolute;
+    border: 1px dashed #000;
+}
