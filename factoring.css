@@ -1,0 +1,100 @@
+@charset "UTF-8";
+
+* {
+    margin: 0;
+    padding: 0;
+    border: none;
+    text-decoration: none;
+    color: inherit;
+    font-size: inherit;
+    font-family: "Lato", sans-serif;
+}
+
+html {
+    color: #000;
+    font-size: 14px;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+html {
+    background: #eee;
+}
+
+a, a * {
+    color: #004;
+    text-decoration: underline;
+}
+
+a:hover {
+    opacity: 0.6;
+}
+
+div.node {
+    cursor: move;
+    border-radius: 9px;
+    position: absolute;
+    border: 2px solid #888;
+    background: #fff;
+    width: auto;
+}
+
+div.edittext {
+    margin: 15px;
+    padding: 5px;
+    min-width: 30px;
+    min-height: 10px;
+    text-align: center;
+    border: 2px dashed #ddd;
+    cursor: text;
+}
+
+div.edittext:focus {
+    border: 2px dashed #444;
+}
+
+div.smallbtn {
+    cursor: pointer;
+    border: 2px solid #888;
+    background: #fff;
+    padding: 5px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    text-align: center;
+    font-weight: bold;
+    width: 15px;
+    height: 15px;
+    opacity: 0;
+    transition: all 2s;
+    visibility: hidden;
+}
+
+div.blockred {
+    border: 2px solid #844;
+    background: #faa;
+}
+
+div.blockred div.edittext {
+    border: 2px dashed #d99;
+}
+
+div.blockgreen {
+    border: 2px solid #484;
+    background: #afa;
+}
+
+div.blockgreen div.edittext {
+    border: 2px dashed #9d9;
+}
+
+div.node:hover div.smallbtn {
+    opacity: 0.6;
+    transition: all 0s;
+    visibility: visible;
+}
