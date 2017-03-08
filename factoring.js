@@ -190,11 +190,13 @@
             edge.style.transformOrigin = "0px 2px";
         }
         edge.upd = function () {
+            var o1 = obj1.getcenter();
+            var o2 = obj2.getcenter();
             drawedge(
-                obj1.getx(),
-                obj1.gety(),
-                obj2.getx(),
-                obj2.gety()
+                o1.x,
+                o1.y,
+                o2.x,
+                o2.y
             );
         }
         var handle = {
@@ -216,19 +218,8 @@
         }
         var connectedEdges = makeSet();
         var selected = false;
-
-        var handle;
-        handle = {
-            getx : function () {
-                return x + Math.round(node.offsetWidth / 2);
-            },
-            gety : function () {
-                return y + Math.round(node.offsetHeight / 2);;
-            },
-            getselected : function () {
-                return selected;
-            },
-            setselected : function (b) {
+        
+        function setselected (b) {
                 if (b && !selected) {
                     node.classList.add("selected");
                     selectedNodes.add(handle);
@@ -238,13 +229,39 @@
                     selectedNodes.remove(handle);
                 }
                 selected = b;
+        }
+        
+        function move (e) {
+            x += e.dx;
+            y += e.dy;
+        }
+        
+        var handle = {
+            getcenter : function () {
+                return {
+                    x : x + Math.round(node.offsetWidth / 2),
+                    y : y + Math.round(node.offsetHeight / 2)
+                };
             },
+            getcorners : function () {
+                return {
+                    x1 : x,
+                    y1 : y,
+                    x2 : x + node.offsetWidth,
+                    y2 : y + node.offsetHeight
+                };
+            },
+            getselected : function () {
+                return selected;
+            },
+            setselected : setselected,
             getel : function () {
                 return node;
             },
             addedge : function (l) {
                 connectedEdges.add(l);
-            }
+            },
+            move : move
         };
         function updEdges() {
             connectedEdges.forEach(function (l) {
@@ -287,11 +304,18 @@
             node.style.left = (sx + x) + "px";
             node.style.top = (sy + y) + "px";
         }
+        
         drag.onmove.add(function (e) {
-            x += e.dx;
-            y += e.dy;
-            upd();
-            updEdges();
+            if (selected) {
+                selectedNodes.forEach(function (node) {
+                    node.move(e);
+                });
+                updateAll.fire();
+            } else {
+                move(e);
+                upd();
+                updEdges();
+            }
         });
         upd();
         updateAll.add(upd);
@@ -321,21 +345,14 @@
             x2 += e.dx;
             y2 += e.dy;
             nodes.forEach(function (node) {
-                var col = collision(x1, x2, y1, y2, node.getx(), node.getx(), node.gety(), node.gety());
+                var corners = node.getcorners();
+                var col = collision(x1, x2, y1, y2, corners.x1, corners.x2, corners.y1, corners.y2);
                 node.setselected(col);
             });
             upd();
         }
         function end(e) {
             document.body.removeChild(select);
-            function unselect(e) {
-                console.log(e);
-                selectedNodes.forEach(function (node) {
-                    node.setselected(false);
-                });
-                document.removeEventListener('mousedown', unselect, false);
-            }
-            document.addEventListener('mousedown', unselect, false);
         }
         return {
             start: start,
@@ -352,9 +369,18 @@
         drag.onend.add(select.end);
     }
 
+    function unselect(e) {
+        if (!e.target.classList.contains("selected")) {
+            selectedNodes.forEach(function (node) {
+                node.setselected(false);
+            });
+        }
+    }
+    
     function init() {
         initBody();
         createNode(-50, -50);
+        document.addEventListener('mousedown', unselect, false);
     }
 
     setTimeout(init, 100);
